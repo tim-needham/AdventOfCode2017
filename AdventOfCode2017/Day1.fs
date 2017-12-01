@@ -9,27 +9,15 @@ let equals (x : int) (y : int) : int =
     else
         0;
 
-let rec sum (is : (int * int) list) : int =
-    match is with
-    | [] -> 0
-    | (x, y)::xs -> (equals x y) + sum xs;
-
-let neighbours (is : int list) : (int * int) list =
-    match is with
-    | [] -> []
-    | [x] -> []
-    | x::xs ->  is @ [x]
-                |> List.pairwise;
-
-let opposites (is : int list) : (int * int) list =
-    match is with
-    | [] -> []
-    | [x] -> []
-    | xs when (List.length xs) % 2 = 1 -> []
-    | x::xs ->  let l = List.length is;
-                let ps = List.take (l / 2) is;
-                let qs = List.skip (l / 2) is;
-                List.zip is (qs @ ps);
+let rec cyclesum (n : int) (o : int) (is : int list) : int = 
+    let l = List.length is;
+    
+    if n >= l then
+        0;
+    else
+        let p = (n + o) % l;
+        (equals is.[n] is.[p]) + (cyclesum (n+1) o is);
+    
 
 let run (file : string) =
 
@@ -38,11 +26,9 @@ let run (file : string) =
                 |> List.map (fun x -> Int32.Parse(x.ToString()));
 
     input
-    |> neighbours
-    |> sum
+    |> cyclesum 0 1 
     |> printfn "Day 1, part 1: %d";
 
     input
-    |> opposites
-    |> sum
+    |> cyclesum 0 ((List.length input) / 2)
     |> printfn "Day 1, part 2: %d";
