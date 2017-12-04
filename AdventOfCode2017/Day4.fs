@@ -3,30 +3,34 @@ module Day4
 open System;
 open System.IO;
 
-let eq (x : string) (y : string) : bool =
-    x = y;
+let clist (s : string) : char list =
+    Seq.toList s;
 
-let anagram (x : string) (y : string) : bool =
+let clsort (s : string) : char list =
+    s
+    |> Seq.toList
+    |> List.sort;
+
+let ceq (x : char list) (y : char list) : bool =
     if x.Length <> y.Length then
         false;
     else
-        let p = x |> Seq.toList |> List.sort;
-        let q = y |> Seq.toList |> List.sort;
-        List.zip p q
-        |> List.map (fun (a, b) -> a = b)
+        List.zip x y
+        |> List.map (fun (p, q) -> p = q)
         |> List.fold (&&) true;
 
-let rec validate (ss : string list) (ts : string list) (f : string -> string -> bool) : int =
+let rec validate (f : string -> char list) (g : char list -> char list -> bool) (ss : char list list) (ts : string list) : int =
     match ts with
     | [] -> 1
-    | x::xs ->  match List.tryFindIndex (fun y -> f x y) ss with
+    | x::xs ->  let y = f x;
+                match List.tryFindIndex (fun z -> g y z) ss with
                 | Some _ -> 0
-                | None -> validate (ss@[x]) xs f;
+                | None -> validate f g (y::ss) xs;
 
-let rec scan (f : string -> string -> bool) (ss : string list list) : int =
+let rec scan (f : string -> char list) (g : char list -> char list -> bool) (ss : string list list) : int =
     match ss with
     | [] -> 0
-    | x::xs -> (validate [] x f) + (scan f xs);
+    | x::xs -> (validate f g [] x) + (scan f g xs);
 
 let run (file : string) =
 
@@ -34,9 +38,9 @@ let run (file : string) =
                 |> List.map (fun x -> x.Split([| ' ' |], StringSplitOptions.RemoveEmptyEntries) |> Seq.toList)
 
     input
-    |> scan eq
+    |> scan clist ceq
     |> printfn "Day 4, part 1: %d";
 
     input
-    |> scan anagram
+    |> scan clsort ceq
     |> printfn "Day 4, part 2: %d";
