@@ -3,37 +3,34 @@ module Day5
 open System;
 open System.IO;
 
-let rec oper (n : int) (p : int) (is : int list) : int * int * (int list) =
-    if p >= is.Length then
-        (n, p, is)
-    else
-        let js = List.take p is;
-        let ks = List.skip p is;
-        let l = List.head ks;
-        let ls = List.tail ks;
-        oper (n+1) (p + l) (js @ [l+1] @ ls)
+let incr (x : int) : int =
+    x + 1;
 
-let rec oper2 (n : int) (p : int) (is : int list) : int * int * (int list) =
-    if p >= is.Length then
-        (n, p, is)
+let split3 (x : int) : int =
+    if x >= 3 then
+        x - 1;
     else
-        let js = List.take p is;
-        let ks = List.skip p is;
-        let l = List.head ks;
-        let ls = List.tail ks;
-        let l' = if l >= 3 then l-1 else l+1
-        oper2 (n+1) (p + l) (js @ [l'] @ ls)
+        x + 1;
 
-let jumps (is : int list) : int =
+let rec oper (n : int) (f : int -> int) (is : int list) (js : int list) : int * (int list) * (int list) =
+    match js with
+    | [] -> (n, is, js)
+    | x::xs ->  let n' = n+1;
+                let x' = f x;
+                if x = 0 then
+                    oper n' f is (x'::xs);
+                else if x > 0 then
+                    let ls, ms = List.take (x-1) xs, List.skip (x-1) xs
+                    oper n' f (is@[x']@ls) ms;
+                else
+                    let l = is.Length + x;
+                    let ls, ms = List.take l is, List.skip l is
+                    oper n' f ls (ms@[x']@xs);
+
+let jumps (f : int -> int) (is : int list) : int =
     match is with
     | [] -> 0
-    | xs -> let (n, p, q) = oper 0 0 is;
-            n;
-
-let jumps2 (is : int list) : int =
-    match is with
-    | [] -> 0
-    | xs -> let (n, p, q) = oper2 0 0 is;
+    | xs -> let (n, _, _) = oper 0 f [] xs;
             n;
 
 let run (file : string) =
@@ -42,9 +39,9 @@ let run (file : string) =
                 |> List.map (Int32.Parse);
 
     input
-    |> jumps
+    |> jumps incr
     |> printfn "Day 5, part 1: %d";
 
     input
-    |> jumps2
+    |> jumps split3
     |> printfn "Day 5, part 2: %d";
