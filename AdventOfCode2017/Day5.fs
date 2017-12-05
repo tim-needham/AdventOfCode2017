@@ -17,14 +17,15 @@ let rec oper (n : int) (f : int -> int) (is : int list) (js : int list) : int * 
     | [] -> (n, is, js)
     | x::xs ->  let n' = n+1;
                 let x' = f x;
+                
                 if x = 0 then
                     oper n' f is (x'::xs);
                 else if x > 0 then
-                    let ls, ms = List.take (x-1) xs, List.skip (x-1) xs
+                    let (ls, ms) = List.splitAt (x-1) xs
                     oper n' f (is@[x']@ls) ms;
                 else
                     let l = is.Length + x;
-                    let ls, ms = List.take l is, List.skip l is
+                    let (ls, ms) = List.splitAt l is
                     oper n' f ls (ms@[x']@xs);
 
 let jumps (f : int -> int) (is : int list) : int =
