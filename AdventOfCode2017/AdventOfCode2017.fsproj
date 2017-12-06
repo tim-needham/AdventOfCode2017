@@ -59,6 +59,7 @@
     <Compile Include="Day3.fs" />
     <Compile Include="Day4.fs" />
     <Compile Include="Day5.fs" />
+    <Compile Include="Day6.fs" />
     <Compile Include="Program.fs" />
     <Content Include="packages.config" />
     <Content Include="day1.txt">
@@ -74,6 +75,9 @@
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </Content>
     <Content Include="day5.txt">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Content>
+    <Content Include="day6.txt">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </Content>
   </ItemGroup>
