@@ -17,7 +17,7 @@ let rec max (n : int) (p : int * int) (rs : int list) : int * int =
     if n >= rs.Length then
         p
     else
-        let (a, b) = p
+        let (_, b) = p
         let q = rs.[n]
    
         if q > b then
@@ -34,21 +34,13 @@ let step (rs : int list) : int list =
     let rs' = zero i rs;
     redistribute m (i+1) rs';
 
-let rec scan (n : int) (ps : int list list) (rs : int list) : int * (int list) =
+let rec scan (n : int) (ps : (int * int list) list) (rs : int list) : int * int * (int list) =
     let rs' = step rs;
-    let i = List.tryFindIndex (fun x -> x = rs') ps;
+    let i = List.tryFindIndex (fun (_, x) -> x = rs') ps;
 
     match i with
-    | Some _ -> (n+1, rs')
-    | None -> scan (n+1) ([rs']@ps) rs';
-
-let rec scanfor (n : int) (ts : int list) (rs : int list) : int =
-    let rs' = step rs;
-
-    if rs' = ts then
-        (n+1)
-    else
-        scanfor (n+1) ts rs';
+    | Some m -> (n+1, fst ps.[m], rs')
+    | None -> scan (n+1) ([(n, rs')]@ps) rs';
 
 let run (file : string) =
 
@@ -56,10 +48,8 @@ let run (file : string) =
                 |> Seq.toList
                 |> List.map (Int32.Parse);
 
-    let (n, ts) = scan 0 [] input
+    let (n, i, ts) = scan 0 [] input
 
     printfn "Day 6, part 1: %d" n;
 
-    let i = n - (scanfor 0 ts input)
-
-    printfn "Day 6, part 2: %d" i;
+    printfn "Day 6, part 2: %d" (n - i - 1);
