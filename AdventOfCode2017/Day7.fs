@@ -33,71 +33,108 @@ let attach (p : Node) (c : Node) : Node =
                     |> List.map (fun x -> if x.Label = c.Label then c else x)
     };
 
-let rec target (ps : Node list) (c : Node) : Node list option =
-    match ps with
-    | [] -> None;
-    | x::xs ->  if x.Children.Length = 0 then
-                    match target xs c with
-                        | Some ys -> Some (x::ys);
-                        | None -> None;
-                else 
-                    match List.tryFindIndex (fun x -> x.Label = c.Label) x.Children with
-                    | Some _ -> let x' = attach x c;
-                                Some (x'::xs);
-                    | None ->   match target x.Children c with
-                                | Some ys ->    let x' = { Label = x.Label; Weight = x.Weight; Children = ys };
-                                                Some (x'::xs);
-                                | None ->   match target xs c with
-                                            | Some zs -> Some (x::zs)
-                                            | None -> None
+let rec target (p : Node) (c : Node) : Node option =
+    if p.Children.Length = 0 then
+        None;
+    else 
+        match List.tryFindIndex (fun x -> x.Label = c.Label) p.Children with
+        | Some _ -> let p' = attach p c;
+                    Some p';
+        | None ->   let qs = p.Children
+                            |> List.map (fun x -> target x c);
 
-let rec merge (p : Node) (cs : Node list) : Node list =
+                    match List.tryFindIndex (fun x -> x <> None) qs with
+                    | Some i -> match qs.[i] with
+                                | Some n -> let cs' = p.Children
+                                                    |> List.mapi (fun j y -> if i = j then n else y);
+                                            let p' = { Label = p.Label; Weight = p.Weight; Children = cs' };
+                                            Some p'
+                                | None -> None;
+                    | None -> None;
+
+let rec m1 (p : Node) (cs : Node list) : Node * (Node list) = 
     match cs with
-    | [] -> [p];
-    | x::xs ->  match target [p] x with
-                | Some ys ->    let y = List.head ys;
-                                merge y xs;
-                | None ->   match target [x] p with
-                            | Some zs -> zs@xs
-                            | None -> x::(merge p xs);
+    | [] -> (p ,[]);
+    | x::xs ->  match target p x with 
+                | Some y -> m1 y xs;
+                | None ->   let (q, ds) = m1 p xs;
+                            (q, x::ds);
 
-let rec nodetree (ns : string list) : Node list =
+let rec m2 (p : Node) (cs : Node list) : Node list =
+    match cs with
+    | [] -> [p]
+    | x::xs ->  match target x p with
+                | Some z -> z::xs
+                | None -> x::(m2 p xs);
+
+let merge (p : Node) (cs : Node list) : Node list =
+    let (q, ds) = m1 p cs;
+    m2 q ds;
+
+let rec nodetree (ns : Node list) : Node list =
     match ns with
     | [] -> []
-    | [x] ->    match nodify x with
-                | Some n -> [n]
-                | None -> []
+    | [x] -> [x]
     | x::xs ->  let xs' = nodetree xs;
-                match nodify x with
-                | Some n -> merge n xs'
-                | None -> xs'
+                merge x xs';
 
+let rec weight (n : Node) : int =
+    (List.fold (fun a c -> a + weight c) 0 n.Children) + n.Weight;
 
+let rec unwind (n : Node) : Node list =
+    match n.Children with
+    | [] -> [n]
+    | xs -> n.Children 
+            |> List.fold (fun a c -> (unwind c)@a) [n];
+
+let rec collect (cs : (int * int) list) (is : int list) : (int * int) list =
+    match is with
+    | [] -> cs
+    | x::xs ->  match List.tryFindIndex (fun (a, b) -> a = x) cs with
+                | Some y -> let ds = cs
+                                    |> List.mapi (fun i (p, q) -> if i = y then (p, q+1) else (p, q))
+                            collect ds xs;
+                | None -> collect ((x, 1)::cs) xs
+
+let balanced (n : Node) : bool * int =
+    match n.Children with
+    | [] -> (true, 0)
+    | xs -> let ws = List.map (fun x -> (x.Weight, weight x)) xs;
+            let ys = ws
+                    |> List.map (snd)
+                    |> collect []
+                    |> List.sortByDescending (snd);
+
+            if ys.Length = 1 then
+                (true, 0)
+            else
+                let d = (fst ys.[0]) - (fst ys.[1]);
+                let (i, _) = List.find (fun (_, y) -> y = (fst ys.[1])) ws;
+
+                (false, i + d);
+
+let rec unbalanced (n : Node list) : int =
+    match n with
+    | [] -> 0;
+    | x::xs ->  match balanced x with
+                | (true, _) -> unbalanced xs;
+                | (false, y) -> y;
 
 let run (file : string) =
 
-    let input = Seq.toList(File.ReadLines(file));
+    let input = Seq.toList(File.ReadLines(file))
+                |> List.map (nodify)
+                |> List.filter (fun x -> match x with | Some y -> true | None -> false)
+                |> List.map (fun (Some x) -> x);
 
-    let test = ["pbga (66)";
-                "xhth (57)";
-                "ebii (61)";
-                "havc (66)";
-                "ktlj (57)";
-                "fwft (72) -> ktlj, cntj, xhth";
-                "qoyq (66)";
-                "padx (45) -> pbga, havc, qoyq";
-                "tknk (41) -> ugml, padx, fwft";
-                "jptl (61)";
-                "ugml (68) -> gyxo, ebii, jptl";
-                "gyxo (61)";
-                "cntj (57)"];
+    let t = input
+            |> nodetree
+            |> List.head;
 
-
-    input
-    |> nodetree
-    |> List.map (fun x -> x.Label)
-    |> List.head
+    t.Label
     |> printfn "Day 7, part 1: %A";
 
-    2
-    |> printfn "Day 7, part 2: %d";
+    t
+    |> unwind
+    |> unbalanced
+    |> printfn "Day 7, part 2: %A";
