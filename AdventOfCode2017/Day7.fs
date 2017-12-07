@@ -33,39 +33,44 @@ let attach (p : Node) (c : Node) : Node =
                     |> List.map (fun x -> if x.Label = c.Label then c else x)
     };
 
-let rec scan (p : Node) (cs : Node list) : Node list =
+let rec target (ps : Node list) (c : Node) : Node list option =
+    match ps with
+    | [] -> None;
+    | x::xs ->  if x.Children.Length = 0 then
+                    match target xs c with
+                        | Some ys -> Some (x::ys);
+                        | None -> None;
+                else 
+                    match List.tryFindIndex (fun x -> x.Label = c.Label) x.Children with
+                    | Some _ -> let x' = attach x c;
+                                Some (x'::xs);
+                    | None ->   match target x.Children c with
+                                | Some ys ->    let x' = { Label = x.Label; Weight = x.Weight; Children = ys };
+                                                Some (x'::xs);
+                                | None ->   match target xs c with
+                                            | Some zs -> Some (x::zs)
+                                            | None -> None
+
+let rec merge (p : Node) (cs : Node list) : Node list =
     match cs with
-    | [] -> [p]
-    | x::xs ->  match List.tryFindIndex (fun n -> n.Label = x.Label) p.Children with
-                | Some _ -> (attach p x)::xs
-                | None ->   match List.tryFindIndex (fun o -> o.Label = p.Label) x.Children with
-                            | Some _ -> (attach x p)::xs;
-                            | None -> x::(scan p xs);
+    | [] -> [p];
+    | x::xs ->  match target [p] x with
+                | Some ys ->    let y = List.head ys;
+                                merge y xs;
+                | None ->   match target [x] p with
+                            | Some zs -> zs@xs
+                            | None -> x::(merge p xs);
 
 let rec nodetree (ns : string list) : Node list =
     match ns with
     | [] -> []
-    | x ->  match nodify x with
-            | Some n -> [n]
-            | None -> []
+    | [x] ->    match nodify x with
+                | Some n -> [n]
+                | None -> []
     | x::xs ->  let xs' = nodetree xs;
                 match nodify x with
-                | Some n -> scan n xs'
+                | Some n -> merge n xs'
                 | None -> xs'
-
-"pbga (66)"
-"xhth (57)"
-"ebii (61)"
-"havc (66)"
-"ktlj (57)"
-"fwft (72) -> ktlj, cntj, xhth"
-"qoyq (66)"
-"padx (45) -> pbga, havc, qoyq"
-"tknk (41) -> ugml, padx, fwft"
-"jptl (61)"
-"ugml (68) -> gyxo, ebii, jptl"
-"gyxo (61)"
-"cntj (57)"
 
 
 
@@ -73,8 +78,26 @@ let run (file : string) =
 
     let input = Seq.toList(File.ReadLines(file));
 
-    1
-    |> printfn "Day 7, part 1: %d";
+    let test = ["pbga (66)";
+                "xhth (57)";
+                "ebii (61)";
+                "havc (66)";
+                "ktlj (57)";
+                "fwft (72) -> ktlj, cntj, xhth";
+                "qoyq (66)";
+                "padx (45) -> pbga, havc, qoyq";
+                "tknk (41) -> ugml, padx, fwft";
+                "jptl (61)";
+                "ugml (68) -> gyxo, ebii, jptl";
+                "gyxo (61)";
+                "cntj (57)"];
+
+
+    input
+    |> nodetree
+    |> List.map (fun x -> x.Label)
+    |> List.head
+    |> printfn "Day 7, part 1: %A";
 
     2
     |> printfn "Day 7, part 2: %d";
