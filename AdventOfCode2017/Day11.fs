@@ -34,12 +34,11 @@ let distance (c : double * double) : int =
     let (x, y) = c;
     int ((Math.Abs x) + (Math.Abs y));
 
-let rec walk (c : double * double) (m : int) (ds : Direction list) : (double * double) * int =
-    match ds with
-    | [] -> (c, m);
-    | x::xs ->  let c' = move c x;
-                let m' = Math.Max (m, distance c');
-                walk c' m' xs;
+let walk (c : double * double) (ds : Direction list) : (double * double) * int =
+    ds
+    |> List.fold (fun (p, d) x ->   let p' = move p x;
+                                    let d' = Math.Max (d, distance p');
+                                    (p', d')) (c, 0);
 
 let run (file : string) =
 
@@ -48,7 +47,7 @@ let run (file : string) =
                 |> List.map(parse);
 
     let (c, d) = input
-                |> walk (0.0, 0.0) 0;
+                |> walk (0.0, 0.0);
 
     c
     |> distance
