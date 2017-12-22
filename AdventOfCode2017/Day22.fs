@@ -64,9 +64,6 @@ let run (file : string) =
     let input = Seq.toList(File.ReadLines(file))
                 |> List.map (Seq.toList);
 
-    let ts = [ "..#"; "#.."; "..." ]
-                |> List.map (Seq.toList);
-    
     let p = centre input;
 
     let map =   [for j in 0..input.Length-1 do
